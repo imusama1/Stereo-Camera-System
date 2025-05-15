@@ -60,16 +60,21 @@ We used cv2.recoverPose() to get the rotation (R) and translation (t) from the E
 
 ---
 
-###  Initial Reconstruction
+### Initial Reconstruction
 
 The first step of reconstruction is to find the camera positions for the first two images and create some 3D points. This gives us a starting shape to build on.  
-We chose two images that were taken from very different angles (wide baseline) to make the geometry more stable. Using the matched points and the known camera settings, we calculated the Essential Matrix.
-$$
-E = K^T F K
-$$
+We chose two images that were taken from very different angles (wide baseline) to make the geometry more stable. Using the matched points and the known camera settings, we calculated the Essential Matrix:
 
- Then, we used cv2.recoverPose() to get the rotation (R) and translation (t) between the two images. 
-<img src="https://latex.codecogs.com/svg.image?\min_{R,t}\sum_i\left\|x_i-\pi(K(RX_i&plus;t))\right\|^2" />
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?E%20%3D%20K%5ET%20F%20K" alt="E = Kᵀ F K"/>
+</p>
+
+Then, we used `cv2.recoverPose()` to get the rotation (R) and translation (t) between the two images by minimizing the reprojection error:
+
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?\min_{R,t}\sum_i\left\|x_i-\pi(K(RX_i&plus;t))\right\|^2" alt="Reprojection error minimization"/>
+</p>
+
 
  
 We used cv2.triangulatePoints() to create the 3D points. After that, we checked if the 3D points were in front of both cameras (this is called a cheirality check). We only kept the solution if this condition was true.
