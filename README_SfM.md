@@ -69,9 +69,8 @@ E = K^T F K
 $$
 
  Then, we used cv2.recoverPose() to get the rotation (R) and translation (t) between the two images. 
-$$
-E = U \cdot \operatorname{diag}(1, 1, 0) \cdot V^\top
-$$
+<img src="https://latex.codecogs.com/svg.image?\min_{R,t}\sum_i\left\|x_i-\pi(K(RX_i&plus;t))\right\|^2" />
+
  
 We used cv2.triangulatePoints() to create the 3D points. After that, we checked if the 3D points were in front of both cameras (this is called a cheirality check). We only kept the solution if this condition was true.
 
