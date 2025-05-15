@@ -5,24 +5,7 @@
 
 ---
 
-## 📑 Table of Contents
-
-- [Introduction](#1-introduction)
-- [Project Overview](#2-project-overview)
-- [Methodology](#3-methodology)
-  - [Feature Detection & Matching](#31-feature-detection--matching)
-  - [Initial Reconstruction](#32-initial-reconstruction)
-  - [Incremental Expansion](#33-incremental-expansion)
-  - [Bundle Adjustment](#34-bundle-adjustment)
-  - [Visualization](#35-visualization)
-- [Key Learnings](#4-key-learnings)
-- [Conclusion](#5-conclusion)
-- [References](#6-references)
-- [How to Run](#7-how-to-run-️)
-
----
-
-## 1. Introduction
+##  Introduction
 
 Structure from Motion (SfM) is a method in computer vision that helps to make 3D shapes from 2D pictures taken from different sides. It works by finding how the camera moved and what the scene looks like in 3D. With this method, we can make 3D models using only pictures from one or two cameras. SfM is used in many areas, like robots, self-driving cars, virtual reality, history studies, and making maps.
 
@@ -36,22 +19,23 @@ This report shows all the steps we followed, the results we got, the problems we
 
 ---
 
-## 2. Project Overview
+##  Project Overview
 
 The goal of this project is to build an incremental Structure from Motion (SfM) system that can make a 3D point cloud from a set of 2D images. The system works by taking one image at a time and slowly creating a 3D shape of the object or scene. At the same time, it also finds the position of the camera for each image. The flowchart shows the SfM pipeline we followed.
-<img src="https://github.com/imusama1/Stereo-Camera-System/blob/main/readme_imgs\flowchart.jpeg"  align="center" ><br>
+<img src="https://github.com/imusama1/Stereo-Camera-System/blob/main/readme_imgs\flowchart.jpeg" width="60%"  align="center" ><br>
 
 ---
 In this project, We tested the Structure-from-Motion (SfM) steps using a pre-calibrated dataset.
 
-🏛️ Pre-Calibrated Dataset
-We took the dataset from the project document which was uploaded on teams. The Temple Ring dataset consists of 46 images.
+## Pre-Calibrated Dataset
+We took the dataset from the project document which was uploaded on teams. The Temple Ring dataset consists of 46
+images.
 
-## 3. Methodology
+##  Methodology
 
 This part explains the theory and how we did each step in the incremental Structure from Motion (SfM) system. The steps are done one by one, starting from camera calibration to showing the final 3D result.
 
-### 3.1 Feature Detection & Matching
+###  Feature Detection & Matching
 
 Feature detection means finding important points in the images, like corners or blobs. Feature matching finds the same points in different images by comparing their descriptors.  
 We used the SIFT algorithm (cv2.SIFT_create()) to find keypoints and get their descriptors. To match the features, we used a brute-force matcher (cv2.BFMatcher) and applied Lowe’s ratio test to remove unclear matches. Then we used the Fundamental Matrix with RANSAC to keep only the correct matches (called inliers).  
@@ -73,14 +57,22 @@ We matched image pairs one by one and saved the matches along with their Fundame
 ##  Pose Recovery
 We used cv2.recoverPose() to get the rotation (R) and translation (t) from the Essential Matrix (E).
 *Fig 2.1. Keypoint detection overlays & Matched keypoint lines (inliers only)*  
-![Keypoints and Matches]("https://github.com/imusama1/Stereo-Camera-System/blob/main/readme_imgs\flowchart.jpeg")
 
 ---
 
-### 3.2 Initial Reconstruction
+###  Initial Reconstruction
 
 The first step of reconstruction is to find the camera positions for the first two images and create some 3D points. This gives us a starting shape to build on.  
-We chose two images that were taken from very different angles (wide baseline) to make the geometry more stable. Using the matched points and the known camera settings, we calculated the Essential Matrix. Then, we used cv2.recoverPose() to get the rotation (R) and translation (t) between the two images.  
+We chose two images that were taken from very different angles (wide baseline) to make the geometry more stable. Using the matched points and the known camera settings, we calculated the Essential Matrix.
+$$
+E = K^T F K
+$$
+
+ Then, we used cv2.recoverPose() to get the rotation (R) and translation (t) between the two images. 
+$$
+E = U \cdot \operatorname{diag}(1, 1, 0) \cdot V^\top
+$$
+ 
 We used cv2.triangulatePoints() to create the 3D points. After that, we checked if the 3D points were in front of both cameras (this is called a cheirality check). We only kept the solution if this condition was true.
 
 **Challenges:**
@@ -100,7 +92,7 @@ We used cv2.triangulatePoints() to create the 3D points. After that, we checked 
 
 ---
 
-#### 3.3) Camera Pose Initialization
+####  Camera Pose Initialization
 
 We fix the first camera as the origin using an identity pose:
 
@@ -109,13 +101,13 @@ P_0 = K \cdot [I \mid 0]
 $$
 This serves as the reference frame for triangulation. Arrays for camera poses and 3D points are also initialized.
 
-## 3.4) Pose Recovery
+##  Pose Recovery
 
 We used cv2.recoverPose() to get the rotation (R) and translation (t) from the Essential Matrix (E).
 This function:
 - Applies a **chirality check** determine whether a 3D point reconstructed from two camera views lies in front of both cameras.
 
-## 3.5) Second Camera Pose Computation
+##  Second Camera Pose Computation
 
 We find the second camera’s position and direction by using the recovered values of R (rotation) and t (translation), compared to the first camera.
 
@@ -127,10 +119,20 @@ $$
 
 Here \( K \) is the intrinsic matrix.
 
-### 3.3 Incremental Expansion
+## Triangulation
+
+To build 3D points, we use `cv2.triangulatePoints()` with the projection data from the first and second cameras and their matching points.
+This function gives points in homogeneous form, so we convert them to Euclidean form to work with them more easily.
+
+###  Incremental Expansion
 
 Incremental SfM adds new images to the reconstruction sequentially by estimating their poses and triangulating new points visible in the added views.  
-For each new image, we used the Perspective-n-Point (PnP) algorithm (cv2.solvePnPRansac()) to estimate its pose based on known 3D-2D correspondences. We matched 2D features in the new image to existing 3D points and used cv2.Rodrigues() to convert rotation vectors into matrices.  
+For each new image, we used the Perspective-n-Point (PnP) algorithm (cv2.solvePnPRansac()) to estimate its pose based on known 3D-2D correspondences.
+$$
+\min_{R, t} \sum_i \left\| x_i - \pi\left(K(RX_i + t)\right) \right\|^2
+$$
+
+We matched 2D features in the new image to existing 3D points and used cv2.Rodrigues() to convert rotation vectors into matrices.  
 New 3D points visible across at least two views were triangulated and merged into the global point cloud. This process was repeated for all images.
 
 **Challenges:**
@@ -150,11 +152,15 @@ New 3D points visible across at least two views were triangulated and merged int
 
 ---
 
-### 3.4 Bundle Adjustment
+###  Bundle Adjustment
 
 Bundle Adjustment (BA) jointly refines all camera poses and 3D point locations to minimize the total reprojection error across all views.  
-We implemented a sparse BA optimization using scipy.optimize.least_squares() to minimize reprojection error. Initial guesses were taken from previous steps, and error terms were calculated based on differences between observed and projected keypoints.  
+We implemented a sparse BA optimization using `scipy.optimize.least_squares()` to minimize reprojection error. Initial guesses were taken from previous steps, and error terms were calculated based on differences between observed and projected keypoints.  
 BA was applied globally after all cameras were registered to improve geometric consistency.
+$$
+\min_{\{R_i, t_i, X_j\}} \sum_{i,j} \left\| x_{ij} - \pi\left(K(R_i X_j + t_i)\right) \right\|^2
+$$
+
 
 **Challenges:**
 
@@ -172,14 +178,25 @@ BA was applied globally after all cameras were registered to improve geometric c
 ![Bundle Adjustment Results](https://github.com/ahmad-laradev/Incremental-Structure-from-Motion-SfM-/raw/main/results/bundle_adjustment_comparison.png)
 
 ---
+### Mathematical Formulation
 
-### 3.5 Visualization
+Minimize the sum of Euclidean distances between observed 2D points \( x_{ij} \) and their predicted projections \( Q(a_j, b_i) \), across all visible points \( v_{ij} = 1 \):
+
+$$
+\min_{a_j, b_i} \sum_{i,j} v_{ij} \cdot \| x_{ij} - Q(a_j, b_i) \|^2
+$$
+
+Where:
+- \( x_{ij} \): observed 2D point
+- \( Q(a_j, b_i) \): projected 2D point from 3D point \( b_i \) and camera parameters \( a_j \)
+- \( v_{ij} \): visibility flag (1 if visible)
+
+###  Visualization
 
 Visualization is the process of rendering the 3D structure and camera motion for analysis and presentation. In this project, we used Open3D to display:
 
 - The full reconstruction of a 3D point cloud (grayscale and colorized).
 - Camera poses with coordinate axes.
-- Showed the trajectory of the camera motion around the object.
 - We exported the final models in .ply format for external viewing.
 
 **Challenges:**
@@ -196,9 +213,9 @@ Visualization is the process of rendering the 3D structure and camera motion for
 
 ---
 
-### 4 Key Learnings
+###  Key Learnings
 
-This project helped me understand both the theory and real-world work behind 3D reconstruction using Structure from Motion (SfM). Here are some of the main lessons I learned:
+This project helped us understand both the theory and real-world work behind 3D reconstruction using Structure from Motion (SfM). Here are some of the main lessons we learned:
 
 **Accurate Camera Calibration is Very Important**
 Camera calibration is the first and most important step. Even small mistakes in camera settings (intrinsic parameters) can cause errors later, especially in triangulation and 3D point quality. The reprojection error helped me check if the calibration was good or not.
@@ -221,7 +238,7 @@ Using OpenCV for image tasks, Open3D for 3D views, and matplotlib for showing re
 
 ---
 
-## 5. Conclusion
+##  Conclusion
 
 This project successfully demonstrated the complete pipeline of incremental Structure from Motion using real image datasets. Beginning with camera calibration and progressing through feature extraction, initial reconstruction, incremental pose registration, and bundle adjustment, we reconstructed a dense 3D point cloud of the Middlebury Temple Ring scene.
 
@@ -231,7 +248,7 @@ Through this hands-on project, we not only deepened our understanding of 3D geom
 
 ---
 
-## 6. References
+##  References
 
 [1] R. Hartley and A. Zisserman, Multiple View Geometry in Computer Vision, 2nd ed. Cambridge, U.K.: Cambridge Univ. Press, 2004.  
 [2] N. Snavely, S. M. Seitz, and R. Szeliski, “Photo tourism: Exploring photo collections in 3D,” ACM Trans. Graph., vol. 25, no. 3, pp. 835–846, Jul. 2006.  
@@ -246,7 +263,7 @@ Through this hands-on project, we not only deepened our understanding of 3D geom
 
 ---
 
-## 7. How to Run 🛠️
+##  How to Run 🛠️
 
 Follow the steps below to set up and run the incremental SfM pipeline on your local machine.
 
