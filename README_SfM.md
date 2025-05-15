@@ -99,6 +99,7 @@ We fix the first camera as the origin using an identity pose:
 $$
 P_0 = K \cdot [I \mid 0]
 $$
+
 This serves as the reference frame for triangulation. Arrays for camera poses and 3D points are also initialized.
 
 ##  Pose Recovery
@@ -114,7 +115,7 @@ We find the second camera’s position and direction by using the recovered valu
 To build the final 3×4 projection matrix, we use this formula:
 
 $$
-P = K \cdot [R \mid t]
+E = K^\top F K
 $$
 
 Here \( K \) is the intrinsic matrix.
