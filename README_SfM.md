@@ -96,13 +96,14 @@ We used cv2.triangulatePoints() to create the 3D points. After that, we checked 
 
 ---
 
-####  Camera Pose Initialization
+#### Camera Pose Initialization
 
 We fix the first camera as the origin using an identity pose:
 
-$$
-P_0 = K \cdot [I \mid 0]
-$$
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?P_0%20%3D%20K%20%5Ccdot%20%5BI%20%7C%200%5D" alt="P₀ = K · [I | 0]"/>
+</p>
+
 
 This serves as the reference frame for triangulation. Arrays for camera poses and 3D points are also initialized.
 
@@ -112,30 +113,33 @@ We used cv2.recoverPose() to get the rotation (R) and translation (t) from the E
 This function:
 - Applies a **chirality check** determine whether a 3D point reconstructed from two camera views lies in front of both cameras.
 
-##  Second Camera Pose Computation
+## Second Camera Pose Computation
 
-We find the second camera’s position and direction by using the recovered values of R (rotation) and t (translation), compared to the first camera.
+We find the second camera’s position and direction by using the recovered values of **R** (rotation) and **t** (translation), compared to the first camera.
 
 To build the final 3×4 projection matrix, we use this formula:
 
-$$
-E = K^\top F K
-$$
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?E%20%3D%20K%5ET%20F%20K" alt="E = Kᵀ F K"/>
+</p>
 
-Here \( K \) is the intrinsic matrix.
+Here, **K** is the intrinsic matrix.
+
 
 ## Triangulation
 
 To build 3D points, we use `cv2.triangulatePoints()` with the projection data from the first and second cameras and their matching points.
 This function gives points in homogeneous form, so we convert them to Euclidean form to work with them more easily.
 
-###  Incremental Expansion
+### Incremental Expansion
 
 Incremental SfM adds new images to the reconstruction sequentially by estimating their poses and triangulating new points visible in the added views.  
-For each new image, we used the Perspective-n-Point (PnP) algorithm (cv2.solvePnPRansac()) to estimate its pose based on known 3D-2D correspondences.
-$$
-\min_{R, t} \sum_i \left\| x_i - \pi\left(K(RX_i + t)\right) \right\|^2
-$$
+For each new image, we used the Perspective-n-Point (PnP) algorithm (`cv2.solvePnPRansac()`) to estimate its pose based on known 3D-2D correspondences.
+
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?\min_{R,t}\sum_i\left\|x_i-\pi\left(K(RX_i&plus;t)\right)\right\|^2" alt="PnP reprojection error"/>
+</p>
+
 
 We matched 2D features in the new image to existing 3D points and used cv2.Rodrigues() to convert rotation vectors into matrices.  
 New 3D points visible across at least two views were triangulated and merged into the global point cloud. This process was repeated for all images.
@@ -157,14 +161,16 @@ New 3D points visible across at least two views were triangulated and merged int
 
 ---
 
-###  Bundle Adjustment
+### Bundle Adjustment
 
 Bundle Adjustment (BA) jointly refines all camera poses and 3D point locations to minimize the total reprojection error across all views.  
 We implemented a sparse BA optimization using `scipy.optimize.least_squares()` to minimize reprojection error. Initial guesses were taken from previous steps, and error terms were calculated based on differences between observed and projected keypoints.  
 BA was applied globally after all cameras were registered to improve geometric consistency.
-$$
-\min_{\{R_i, t_i, X_j\}} \sum_{i,j} \left\| x_{ij} - \pi\left(K(R_i X_j + t_i)\right) \right\|^2
-$$
+
+<p align="center">
+  <img src="https://latex.codecogs.com/svg.image?\min_{\{R_i,\;t_i,\;X_j\}}\sum_{i,j}\left\|x_{ij}-\pi\left(K(R_iX_j&plus;t_i)\right)\right\|^2" alt="Bundle Adjustment cost function"/>
+</p>
+
 
 
 **Challenges:**
