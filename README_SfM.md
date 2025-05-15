@@ -42,6 +42,10 @@ The goal of this project is to build an incremental Structure from Motion (SfM) 
 <img src="https://github.com/imusama1/Stereo-Camera-System/blob/main/readme_imgs\flowchart.jpeg"  align="center" ><br>
 
 ---
+In this project, We tested the Structure-from-Motion (SfM) steps using a pre-calibrated dataset.
+
+🏛️ Pre-Calibrated Dataset
+We took the dataset from the project document which was uploaded on teams. The Temple Ring dataset consists of 46 images.
 
 ## 3. Methodology
 
@@ -55,18 +59,21 @@ We matched image pairs one by one and saved the matches along with their Fundame
 
 **Challenges:**
 
-- Low-texture surfaces in some images resulted in fewer keypoints.
-- Overlapping shadows and specular highlights caused mismatches.
-- Matching quality varied across views, affecting reconstruction consistency.
+- Some images had flat or low-texture surfaces, so fewer keypoints were detected.
+- Shadows and shiny spots (specular highlights) caused wrong matches between images.
+- The quality of feature matching changed from one view to another, which affected the overall 3D reconstruction quality.
 
 **Results:**
 
-- Strong correspondences are found in well-textured regions (e.g., statue contours).
-- Fundamental matrix estimation achieved >80% inlier rates for most pairs.
-- Visualizations clearly showed consistent matching, especially across adjacent views.
+- Good matches were mostly found in areas with clear texture, like the edges of the statue.
+- The Fundamental Matrix estimation gave more than 80% correct matches (inliers) for most image pairs.
+- The visual results showed that matching was consistent, especially between images taken from nearby angles.
 
+
+##  Pose Recovery
+We used cv2.recoverPose() to get the rotation (R) and translation (t) from the Essential Matrix (E).
 *Fig 2.1. Keypoint detection overlays & Matched keypoint lines (inliers only)*  
-![Keypoints and Matches](https://github.com/ahmad-laradev/Incremental-Structure-from-Motion-SfM-/raw/main/results/matches_sample.png)
+![Keypoints and Matches]("https://github.com/imusama1/Stereo-Camera-System/blob/main/readme_imgs\flowchart.jpeg")
 
 ---
 
@@ -92,6 +99,33 @@ We used cv2.triangulatePoints() to create the 3D points. After that, we checked 
 ![Initial 3D Reconstruction](https://github.com/ahmad-laradev/Incremental-Structure-from-Motion-SfM-/raw/main/results/initial_pointcloud.png)
 
 ---
+
+#### 3.3) Camera Pose Initialization
+
+We fix the first camera as the origin using an identity pose:
+
+$$
+P_0 = K \cdot [I \mid 0]
+$$
+This serves as the reference frame for triangulation. Arrays for camera poses and 3D points are also initialized.
+
+## 3.4) Pose Recovery
+
+We used cv2.recoverPose() to get the rotation (R) and translation (t) from the Essential Matrix (E).
+This function:
+- Applies a **chirality check** determine whether a 3D point reconstructed from two camera views lies in front of both cameras.
+
+## 3.5) Second Camera Pose Computation
+
+We find the second camera’s position and direction by using the recovered values of R (rotation) and t (translation), compared to the first camera.
+
+To build the final 3×4 projection matrix, we use this formula:
+
+$$
+P = K \cdot [R \mid t]
+$$
+
+Here \( K \) is the intrinsic matrix.
 
 ### 3.3 Incremental Expansion
 
