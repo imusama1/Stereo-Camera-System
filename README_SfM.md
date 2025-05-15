@@ -39,7 +39,7 @@ This report shows all the steps we followed, the results we got, the problems we
 ## 2. Project Overview
 
 The goal of this project is to build an incremental Structure from Motion (SfM) system that can make a 3D point cloud from a set of 2D images. The system works by taking one image at a time and slowly creating a 3D shape of the object or scene. At the same time, it also finds the position of the camera for each image. The flowchart shows the SfM pipeline we followed.
-<img src="https://github.com/ahmad-laradev/Incremental-Structure-from-Motion-SfM-/raw/main/results/matches_sample.png"  align="center" ><br>
+<img src="https://github.com/ahmad-laradev/Incremental-Structure-from-Motion-SfM-/readme_imgs\flowchart.jpeg"  align="center" ><br>
 
 ---
 
