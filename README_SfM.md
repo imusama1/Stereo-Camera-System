@@ -137,7 +137,7 @@ Incremental SfM adds new images to the reconstruction sequentially by estimating
 For each new image, we used the Perspective-n-Point (PnP) algorithm (`cv2.solvePnPRansac()`) to estimate its pose based on known 3D-2D correspondences.
 
 <p align="center">
-  <img src="https://latex.codecogs.com/svg.image?\min_{R,t}\sum_i\left\|x_i-\pi\left(K(RX_i&plus;t)\right)\right\|^2" alt="PnP reprojection error"/>
+  <img src="https://latex.codecogs.com/svg.image?\min_%7BR%2Ct%7D%20%5Csum_i%20%5Cleft%5C%7C%20x_i%20-%20%5Cpi%5Cleft(K%28RX_i%20%2B%20t%29%5Cright)%20%5Cright%5C%7C%5E2" alt="PnP reprojection error"/>
 </p>
 
 
